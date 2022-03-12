@@ -5,6 +5,7 @@
 #include "coding/zip_reader.hpp"
 #include "coding/internal/file_data.hpp"
 
+#include "base/file_name_utils.hpp"
 #include "base/thread.hpp"
 #include "base/thread_pool.hpp"
 #include "base/logging.hpp"
@@ -96,7 +97,7 @@ public:
 UNIT_TEST(ApkReader_Multithreaded)
 {
 /// @todo Update test with current apk path.
-  string const path = GetPlatform().WritableDir() + "../android/MapsWithMePro/bin/MapsWithMePro-production.apk";
+string const path = base::JoinPath(GetPlatform().WritableDir(), "../android/MapsWithMePro/bin/MapsWithMePro-production.apk");
 
 uint64_t size;
 if (!base::GetFileSize(path, size))

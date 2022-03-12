@@ -145,9 +145,9 @@ string Platform::ReadPathForFile(string const & file, string searchScope) const
   {
     switch (searchScope[i])
     {
-    case 'w': fullPath = base::JoinPath(m_writableDir, file); break;
-    case 'r': fullPath = base::JoinPath(m_resourcesDir, file); break;
-    case 's': fullPath = base::JoinPath(m_settingsDir, file); break;
+    case 'w': ASSERT(!m_writableDir.empty(), ("ReadPathForFile Writable dir is empty")); fullPath = base::JoinPath(m_writableDir, file); break;
+    case 'r': ASSERT(!m_resourcesDir.empty(), ("ReadPathForFile Resources dir is empty")); fullPath = base::JoinPath(m_resourcesDir, file); break;
+    case 's': ASSERT(!m_settingsDir.empty(), ("ReadPathForFile Settings dir is empty")); fullPath = base::JoinPath(m_settingsDir, file); break;
     case 'f': fullPath = file; break;
     default : CHECK(false, ("Unsupported searchScope:", searchScope)); break;
     }

@@ -28,7 +28,7 @@
 #include <netinet/in.h>
 
 using std::optional, std::string;
-using base::JoinPath;
+using base::AddSlashIfNeeded, base::JoinPath;
 
 namespace
 {
@@ -98,7 +98,7 @@ Platform::Platform()
     m_resourcesDir = *dir;
   else
   { // Guess the existing resources directory.
-    string const dirsToScan = {
+    string const dirsToScan[] = {
         "./data",  // symlink in the current folder
         "../data",  // 'build' folder inside the repo
         JoinPath(*execDir, "..", "organicmaps", "data"),  // build-omim-{debug,release}
@@ -109,7 +109,7 @@ Platform::Platform()
     {
       if (IsWelcomeExist(dir))
       {
-        m_resourcesDir = AddSlashIfNeeded(dir);
+        m_resourcesDir = dir;
         if (m_writableDir.empty() && IsDirWritable(dir))
           m_writableDir = m_resourcesDir;
         break;
@@ -125,13 +125,17 @@ Platform::Platform()
   }
   // Here one or both m_resourcesDir and m_writableDir still may be empty.
   // Tests or binary may initialize them later.
+  if (!m_writableDir.empty())
+    AddSlashIfNeeded(m_writableDir);
+  if (!m_resourcesDir.empty())
+    AddSlashIfNeeded(m_resourcesDir);
 
   // Select directory for temporary files.
-  for (auto const & dir : { GetEnv("TMPDIR"), GetEnv("TMP"), GetEnv("TEMP"), "/tmp"})
+  for (auto const dir : { GetEnv("TMPDIR"), GetEnv("TMP"), GetEnv("TEMP"), {"/tmp"}})
   {
-    if (dir && IsFileExistsByFullPath(dir) && IsDirWritable(dir))
+    if (dir && IsFileExistsByFullPath(*dir) && IsDirWritable(*dir))
     {
-      m_tmpDir = AddSlashIfNeeded(tmpDir);
+      m_tmpDir = AddSlashIfNeeded(*dir);
       break;
     }
   }

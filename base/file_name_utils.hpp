@@ -30,6 +30,7 @@ std::string::value_type GetNativeSeparator();
 
 /// Add the terminating slash to the folder path std::string if it's not already there.
 std::string AddSlashIfNeeded(std::string const & path);
+void AddSlashIfNeeded(std::string & path);
 
 namespace impl
 {

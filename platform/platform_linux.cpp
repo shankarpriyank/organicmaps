@@ -126,9 +126,9 @@ Platform::Platform()
   // Here one or both m_resourcesDir and m_writableDir still may be empty.
   // Tests or binary may initialize them later.
   if (!m_writableDir.empty())
-    AddSlashIfNeeded(m_writableDir);
+    m_writableDir = AddSlashIfNeeded(m_writableDir);
   if (!m_resourcesDir.empty())
-    AddSlashIfNeeded(m_resourcesDir);
+    m_resourcesDir = AddSlashIfNeeded(m_resourcesDir);
 
   // Select directory for temporary files.
   for (auto const dir : { GetEnv("TMPDIR"), GetEnv("TMP"), GetEnv("TEMP"), {"/tmp"}})

@@ -77,11 +77,4 @@ string AddSlashIfNeeded(string const & path)
     return path;
   return path + sep;
 }
-
-void AddSlashIfNeeded(string & path)
-{
-  auto const sep = GetNativeSeparator();
-  if (!path.empty() && path.back() != sep)
-    path += sep;
-}
 }  // namespace base

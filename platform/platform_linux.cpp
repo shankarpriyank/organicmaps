@@ -13,10 +13,12 @@
 #include <algorithm>
 #include <functional>
 #include <initializer_list>
+#include <optional>
 #include <string>
 
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>  // strrchr
+#include <unistd.h>  // access, readlink
 
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -25,39 +27,43 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-using namespace std;
+using std::optional, std::string;
+using base::JoinPath;
 
 namespace
 {
-// Web service ip to check internet connection. Now it's a mail.ru ip.
-char constexpr kSomeWorkingWebServer[] = "217.69.139.202";
+// Web service ip to check internet connection. Now it's a GitHub.com IP.
+char constexpr kSomeWorkingWebServer[] = "140.82.121.4";
 
 // Returns directory where binary resides, including slash at the end.
-bool GetBinaryDir(string & outPath)
+optional<string> GetExecutableDir()
 {
-  char path[4096] = {};
+  char path[PATH_MAX] = {};
   if (::readlink("/proc/self/exe", path, ARRAY_SIZE(path)) <= 0)
-    return false;
-  outPath = path;
-  outPath.erase(outPath.find_last_of('/') + 1);
-  return true;
+    return {};
+  *(strrchr(path, '/') + 1) = '\0';
+  return path;
 }
 
-// Returns true if EULA file exists in directory.
-bool IsWelcomeExist(string const & directory)
+// Returns true if EULA file exists in a directory.
+bool IsWelcomeExist(string const & dir)
 {
-  return Platform::IsFileExistsByFullPath(base::JoinPath(directory, "welcome.html"));
+  return Platform::IsFileExistsByFullPath(JoinPath(dir, "welcome.html"));
 }
 
-bool GetHomeDir(string & outPath)
+// Returns string value of an environment variable.
+optional<string> GetEnv(char const * var)
 {
-  char const * homePath = ::getenv("HOME");
-  if (homePath == nullptr)
-    return false;
-  outPath = homePath;
-  return true;
+  char const * value = ::getenv(var);
+  if (value == nullptr)
+    return {};
+  return value;
 }
 
+bool IsDirWritable(string const & dir)
+{
+  return ::access(dir.c_str(), W_OK) == 0;
+}
 }  // namespace
 
 namespace platform
@@ -71,70 +77,64 @@ unique_ptr<Socket> CreateSocket()
 
 Platform::Platform()
 {
-  // Init directories.
-  string execPath, homePath;
-  CHECK(GetBinaryDir(execPath), ("Can't retrieve path to executable"));
-  CHECK(GetHomeDir(homePath), ("Can't retrieve home path"));
+  // Current executable's path with a trailing slash.
+  auto const execDir = GetExecutableDir();
+  CHECK(execDir, ("Can't retrieve the path to executable"));
+  // Home directory without a trailing slash.
+  auto const homeDir = GetEnv("HOME");
+  CHECK(homeDir, ("Can't retrieve home directory"));
 
-  m_settingsDir = base::JoinPath(homePath, ".config", "OMaps");
-
-  if (!IsFileExistsByFullPath(base::JoinPath(m_settingsDir, SETTINGS_FILE_NAME)))
-  {
-    if (!MkDirRecursively(m_settingsDir))
-      MYTHROW(FileSystemException, ("Can't create directory", m_settingsDir));
-  }
-
+  // ~/.config/OMaps/
+  m_settingsDir = JoinPath(*homeDir, ".config", "OMaps");
+  if (!IsFileExistsByFullPath(JoinPath(m_settingsDir, SETTINGS_FILE_NAME)) && !MkDirRecursively(m_settingsDir))
+    MYTHROW(FileSystemException, ("Can't create directory", m_settingsDir));
   m_settingsDir += '/';
 
-  char const * resDir = ::getenv("MWM_RESOURCES_DIR");
-  char const * writableDir = ::getenv("MWM_WRITABLE_DIR");
-  if (resDir && writableDir)
-  {
-    m_resourcesDir = resDir;
-    m_writableDir = writableDir;
-  }
-  else if (resDir)
-  {
-    m_resourcesDir = resDir;
-    m_writableDir = base::JoinPath(homePath, ".local", "share", "OMaps");
-    if (!MkDirRecursively(m_writableDir))
-      MYTHROW(FileSystemException, ("Can't create directory:", m_writableDir));
-  }
-  else
-  {
-    string dirs[] = {
-      "./data",                                     // check symlink in the current folder
-      "../data",                                    // check if we are in the 'build' folder inside repo
-      base::JoinPath(execPath, "..", "..", "data"), // check symlink from bundle?
-      base::JoinPath(execPath, "..", "share"),      // installed version with packages
-      base::JoinPath(execPath, "..", "OMaps")       // installed version without packages
-    };
+  // Override dirs from the env.
+  if (auto const dir = GetEnv("MWM_WRITABLE_DIR"))
+    m_writableDir = *dir;
 
-    for (auto const & dir : dirs)
+  if (auto const dir = GetEnv("MWM_RESOURCES_DIR"))
+    m_resourcesDir = *dir;
+  else
+  { // Guess the existing resources directory.
+    string const dirsToScan = {
+        "./data",  // symlink in the current folder
+        "../data",  // 'build' folder inside the repo
+        JoinPath(*execDir, "..", "organicmaps", "data"),  // build-omim-{debug,release}
+        JoinPath(*execDir, "..", "share"),  // installed version with packages
+        JoinPath(*execDir, "..", "OMaps"),  // installed version without packages
+    };
+    for (auto const & dir : dirsToScan)
     {
       if (IsWelcomeExist(dir))
       {
-        m_resourcesDir = dir;
-        m_writableDir = (writableDir != nullptr) ? writableDir : m_resourcesDir;
+        m_resourcesDir = AddSlashIfNeeded(dir);
+        if (m_writableDir.empty() && IsDirWritable(dir))
+          m_writableDir = m_resourcesDir;
         break;
       }
     }
   }
-
-
-  char const * tmpDir = ::getenv("TMPDIR");
-  if (tmpDir)
+  // Use ~/.local/share/OMaps if resources directory was not writable.
+  if (!m_resourcesDir.empty() && m_writableDir.empty())
   {
-    m_tmpDir = tmpDir;
+    m_writableDir = JoinPath(*homeDir, ".local", "share", "OMaps");
+    if (!MkDirRecursively(m_writableDir))
+      MYTHROW(FileSystemException, ("Can't create writable directory:", m_writableDir));
   }
-  else
+  // Here one or both m_resourcesDir and m_writableDir still may be empty.
+  // Tests or binary may initialize them later.
+
+  // Select directory for temporary files.
+  for (auto const & dir : { GetEnv("TMPDIR"), GetEnv("TMP"), GetEnv("TEMP"), "/tmp"})
   {
-    /// @todo Don't have other good ideas here ..
-    m_tmpDir = base::JoinPath(homePath, "tmp");
-    if (!MkDirRecursively(m_tmpDir))
-      MYTHROW(FileSystemException, ("Can't create tmp directory:", m_tmpDir));
+    if (dir && IsFileExistsByFullPath(dir) && IsDirWritable(dir))
+    {
+      m_tmpDir = AddSlashIfNeeded(tmpDir);
+      break;
+    }
   }
-  m_tmpDir += '/';
 
   m_guiThread = make_unique<platform::GuiThread>();
 
@@ -221,7 +221,7 @@ void Platform::GetSystemFontNames(FilesList & res) const
     "AbyssinicaSIL-R.ttf",
   };
 
-  string systemFontsPath[] = {
+  string const systemFontsPath[] = {
     "/usr/share/fonts/truetype/roboto/",
     "/usr/share/fonts/truetype/droid/",
     "/usr/share/fonts/truetype/dejavu/",

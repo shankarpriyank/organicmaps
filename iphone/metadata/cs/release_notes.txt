@@ -1,0 +1,28 @@
+- Nová data map OSM k 4. únoru 2022
+- Nový dialog Nápověda/O aplikaci na hlavní obrazovce
+- Skrytí spodního panelu nástrojů při klepnutí na prázdnou mapu
+- Průhledné pozadí spodního panelu nástrojů
+
+Směrování:
+- Opraveny chyby v trasování se zbytečnými sjezdy z dálnice
+- Opraveny některé chyby v trasování cyklistů
+- Respektování nastavení "Vyhnout se silnicím" pro cyklistické a pěší trasy
+- Opravena chyba s neplatným trasováním napříč regiony
+
+Mapa:
+- Přidány kategorie pro vyhledávání vody, zařízení pro obytné automobily a recyklace
+- Přidáno: Svoz balíků, pytle na exkrementy, přístaviště, kemp pro karavany, skládka, sloup , stožár na vlajku, pohřební služba
+- Lepší zobrazování čísel domů v navigaci
+- Výběr liniových objektů místo plošných při dlouhém klepnutí
+- Obce a města jsou správně upřednostňovány na 10-11 úrovních přiblížení
+- Upřednostnění parkoviště před ostatními oblastmi, jako jsou lesy
+- Vylepšené vykreslování mol, hrází, řezů
+- Vylepšená viditelnost vlakových stanic
+- Národní parky a vojenské výsypky méně rušivé
+- Upravena viditelnost dálnic
+- Opraveno nesprávné označení některých hlavních měst jako měst na mapě světa.
+- Opraveny některé ikony
+
+Překlady:
+- Opraveny překlady do němčiny, italštiny a turečtiny
+- Nejčastější dotazy v turečtině

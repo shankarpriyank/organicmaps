@@ -1,6 +1,7 @@
 package com.androidAuto;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Rect;
 import android.util.Log;
 import android.view.Surface;
@@ -21,8 +22,13 @@ import androidx.car.app.navigation.model.NavigationTemplate;
 import androidx.core.graphics.drawable.IconCompat;
 import com.mapswithme.maps.BuildConfig;
 import com.mapswithme.maps.MapFragment;
+import com.mapswithme.maps.MwmActivity;
 import com.mapswithme.maps.MwmApplication;
 import com.mapswithme.maps.R;
+import com.mapswithme.maps.bookmarks.data.FeatureId;
+import com.mapswithme.maps.bookmarks.data.MapObject;
+import com.mapswithme.maps.location.LocationHelper;
+import com.mapswithme.maps.routing.RoutingController;
 
 import java.io.IOException;
 
@@ -67,7 +73,7 @@ public class MainScreen extends Screen implements SurfaceCallback
                                         .setOnClickListener(this::zoomIn)
                                         .build();
     Action zoomOut = new Action.Builder().setIcon(new CarIcon.Builder(IconCompat.createWithResource(getCarContext(), R.drawable.ic_zoom_out)).build())
-                                         .setOnClickListener(this::zoomOut)
+                                         .setOnClickListener(this::route)
                                          .build();
 
     Action openMic = new Action.Builder().setIcon(new CarIcon.Builder(IconCompat.createWithResource(getCarContext(), R.drawable.ic_booking)).build())
@@ -86,7 +92,11 @@ public class MainScreen extends Screen implements SurfaceCallback
 
   private void zoomOut()
   {
-    MapFragment.nativeScaleMinus();
+
+
+    MapObject startPoint = LocationHelper.INSTANCE.getMyPosition();
+    RoutingController.get().prepare(startPoint, startPoint);
+  //  MapFragment.nativeScaleMinus();
   }
 
   private void zoomIn()
@@ -96,8 +106,23 @@ public class MainScreen extends Screen implements SurfaceCallback
 
   private void exit()
   {
+
+    Intent intent = new Intent(getCarContext(),MwmActivity.class);
+
+
+// //   MapFragment.nativeDetachSurface(true);
+//    MwmActivity mMapActivity = new MwmActivity();
+//     mMapActivity.intentTosameActivity();
     getCarContext().finishCarApp();
-    MapFragment.nativeDetachSurface(true);
+
+  }
+
+
+  private void route(){
+
+    MapObject startPoint = LocationHelper.INSTANCE.getMyPosition();
+    MapObject endPoint = MapObject.createMapObject(FeatureId.EMPTY, MapObject.POI, "Test", "test", 23.2599, 77.4126);
+    RoutingController.get().prepare(startPoint,endPoint);
   }
 
   @Override

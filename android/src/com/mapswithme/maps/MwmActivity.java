@@ -533,7 +533,7 @@ public class MwmActivity extends BaseMwmFragmentActivity
     setFullscreen(false);
   }
 
-  private void initMap(boolean isLaunchByDeepLink)
+  public void initMap(boolean isLaunchByDeepLink)
   {
     mMapFragment = (MapFragment) getSupportFragmentManager().findFragmentByTag(MapFragment.class.getName());
     if (mMapFragment == null)
@@ -1985,5 +1985,11 @@ public class MwmActivity extends BaseMwmFragmentActivity
   {
     closeFloatingPanels();
     toggleLayer(mode);
+  }
+  public   void intentTosameActivity(){
+    Intent intent = getIntent();
+    finish();
+    startActivity(intent);
+
   }
 }

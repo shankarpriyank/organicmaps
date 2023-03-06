@@ -101,4 +101,12 @@ public class NavigationScreen extends MapScreen
   {
     getScreenManager().push(new BookmarksScreen(getCarContext(), getSurfaceRenderer()));
   }
+
+  private void requestPermission()
+  {
+    getScreenManager().push(new RequestPermissionScreen(getCarContext(),this::requestLocationUpdates));
+  }
+
+  void requestLocationUpdates() {
+  }
 }

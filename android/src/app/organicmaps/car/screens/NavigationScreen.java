@@ -11,6 +11,9 @@ import androidx.car.app.model.Row;
 import androidx.car.app.model.Template;
 import androidx.car.app.navigation.model.MapTemplate;
 import androidx.core.graphics.drawable.IconCompat;
+import android.location.Location;
+import android.location.LocationManager;
+
 
 import app.organicmaps.R;
 import app.organicmaps.car.SurfaceRenderer;
@@ -100,5 +103,13 @@ public class NavigationScreen extends MapScreen
   private void openBookmarks()
   {
     getScreenManager().push(new BookmarksScreen(getCarContext(), getSurfaceRenderer()));
+  }
+
+  private void requestPermission()
+  {
+    getScreenManager().push(new RequestPermissionScreen(getCarContext(),this::requestLocationUpdates));
+  }
+
+  void requestLocationUpdates() {
   }
 }
